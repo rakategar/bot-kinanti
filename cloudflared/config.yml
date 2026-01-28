@@ -1,8 +1,7 @@
 # Cloudflare Tunnel Configuration untuk Bot Kinanti
 # Tunnel ini mengekspos bot WhatsApp ke internet via bot.kinantiku.com
 
-tunnel: kinanti-bot
-# Path credentials akan di-set otomatis berdasarkan home directory user
+tunnel: be4b28a9-5fc8-4bbe-a088-81b4ada73c56
 credentials-file: ~/.cloudflared/be4b28a9-5fc8-4bbe-a088-81b4ada73c56.json
 
 ingress:
