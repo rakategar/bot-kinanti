@@ -96,7 +96,7 @@ open_terminal() {
     
     case $TERMINAL in
         lxterminal)
-            lxterminal --title="$title" -e "bash -c '$cmd; exec bash'" &
+            lxterminal --title="$title" --working-directory="$BOT_DIR" -e bash -c "$cmd; exec bash" &
             ;;
         gnome-terminal)
             gnome-terminal --title="$title" -- bash -c "$cmd; exec bash"
@@ -114,6 +114,9 @@ open_terminal() {
             xterm -T "$title" -e "bash -c '$cmd; exec bash'" &
             ;;
     esac
+    
+    # Tunggu sebentar agar terminal terbuka
+    sleep 1
 }
 
 # Fungsi untuk menjalankan dengan tmux
@@ -210,13 +213,13 @@ fi
 
 # Terminal 1: Jalankan Bot
 echo -e "${YELLOW}[1/2] Membuka terminal untuk Bot...${NC}"
-open_terminal "🤖 Bot Kinanti" "cd '$BOT_DIR' && echo '🤖 Bot Kinanti' && echo '==================' && node server.js"
+open_terminal "Bot-Kinanti" "cd $BOT_DIR && echo '🤖 Bot Kinanti' && echo '==================' && node server.js"
 
-sleep 2
+sleep 3
 
 # Terminal 2: Jalankan Cloudflare Tunnel
 echo -e "${YELLOW}[2/2] Membuka terminal untuk Cloudflare Tunnel...${NC}"
-open_terminal "🌐 Cloudflare Tunnel" "echo '🌐 Cloudflare Tunnel' && echo '==================' && echo 'Endpoint: https://bot.kinantiku.com' && echo '' && cloudflared tunnel --config '$CONFIG_FILE' run"
+open_terminal "Cloudflare-Tunnel" "echo '🌐 Cloudflare Tunnel' && echo '==================' && echo 'Endpoint: https://bot.kinantiku.com' && echo '' && cloudflared tunnel --config $CONFIG_FILE run"
 
 echo ""
 echo -e "${GREEN}============================================${NC}"
@@ -227,16 +230,5 @@ echo -e "📍 Bot: ${BLUE}http://localhost:4000${NC}"
 echo -e "🌐 Public: ${BLUE}https://bot.kinantiku.com${NC}"
 echo ""
 echo -e "${YELLOW}Gunakan ./stop.sh untuk menghentikan bot${NC}"
-
-echo ""
-echo -e "${GREEN}============================================${NC}"
-echo -e "${GREEN}✅ Bot Kinanti berhasil dijalankan!${NC}"
-echo -e "${GREEN}============================================${NC}"
-echo ""
-echo -e "📍 Bot berjalan di: ${BLUE}http://localhost:4000${NC}"
-echo -e "🌐 Public URL: ${BLUE}https://bot.kinantiku.com${NC}"
-echo ""
-echo -e "${YELLOW}Tips:${NC}"
-echo -e "  - Untuk stop, tutup kedua terminal yang terbuka"
 echo -e "  - Atau gunakan: ${BLUE}./stop.sh${NC}"
 echo ""
