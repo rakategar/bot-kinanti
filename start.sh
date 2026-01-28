@@ -134,8 +134,11 @@ run_with_tmux() {
     echo -e "${BLUE}🚀 Memulai Bot Kinanti dengan tmux...${NC}"
     echo ""
     
+    # Load nvm jika ada
+    NVM_LOAD='export NVM_DIR="$HOME/.nvm"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"'
+    
     # Buat session baru dengan window pertama untuk bot
-    tmux new-session -d -s "$session_name" -n "bot" "cd '$BOT_DIR' && echo '🤖 Bot Kinanti' && echo '==================' && node server.js; exec bash"
+    tmux new-session -d -s "$session_name" -n "bot" "cd '$BOT_DIR' && $NVM_LOAD && echo '🤖 Bot Kinanti' && echo '==================' && node server.js; exec bash"
     
     sleep 1
     
@@ -179,8 +182,11 @@ run_with_screen() {
     echo -e "${BLUE}🚀 Memulai Bot Kinanti dengan screen...${NC}"
     echo ""
     
+    # Load nvm jika ada
+    NVM_LOAD='export NVM_DIR="$HOME/.nvm"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"'
+    
     # Jalankan bot di screen
-    screen -dmS "$session_name" bash -c "cd '$BOT_DIR' && node server.js"
+    screen -dmS "$session_name" bash -c "cd '$BOT_DIR' && $NVM_LOAD && node server.js"
     
     sleep 1
     
@@ -213,7 +219,9 @@ fi
 
 # Terminal 1: Jalankan Bot
 echo -e "${YELLOW}[1/2] Membuka terminal untuk Bot...${NC}"
-open_terminal "Bot-Kinanti" "cd $BOT_DIR && echo '🤖 Bot Kinanti' && echo '==================' && node server.js"
+# Load nvm jika ada (untuk Raspberry Pi dengan nvm)
+NVM_LOAD='export NVM_DIR="$HOME/.nvm"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"'
+open_terminal "Bot-Kinanti" "cd $BOT_DIR && $NVM_LOAD && echo '🤖 Bot Kinanti' && echo '==================' && node server.js"
 
 sleep 3
 

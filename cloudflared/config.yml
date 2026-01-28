@@ -2,7 +2,8 @@
 # Tunnel ini mengekspos bot WhatsApp ke internet via bot.kinantiku.com
 
 tunnel: kinanti-bot
-credentials-file: /home/raka/.cloudflared/34d11f52-a5e9-4f9a-bb1b-cd11d6289df2.json
+# Path credentials akan di-set otomatis berdasarkan home directory user
+credentials-file: ~/.cloudflared/be4b28a9-5fc8-4bbe-a088-81b4ada73c56.json
 
 ingress:
   # Bot WhatsApp API (port 4000)

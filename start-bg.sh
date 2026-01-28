@@ -39,6 +39,10 @@ if [ -f "$PID_FILE" ]; then
     fi
 fi
 
+# Load nvm jika ada (untuk Raspberry Pi dengan nvm)
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
 # Jalankan Bot di background
 echo -e "${YELLOW}[1/2] Menjalankan Bot...${NC}"
 cd "$BOT_DIR"
