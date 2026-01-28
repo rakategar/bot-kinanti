@@ -1,10 +1,49 @@
 const { Client, LocalAuth } = require("whatsapp-web.js");
+const { execSync } = require("child_process");
+
+// Fungsi untuk mendeteksi path browser yang tersedia
+function getBrowserPath() {
+  const browsers = [
+    "/usr/bin/chromium-browser",    // Raspberry Pi OS
+    "/usr/bin/chromium",            // Debian/Ubuntu
+    "/usr/bin/google-chrome",       // Google Chrome
+    "/usr/bin/google-chrome-stable",
+    "/snap/bin/chromium",           // Snap
+  ];
+
+  for (const browser of browsers) {
+    try {
+      execSync(`test -f ${browser}`);
+      console.log(`🌐 Browser ditemukan: ${browser}`);
+      return browser;
+    } catch (e) {
+      // Browser tidak ditemukan, coba yang lain
+    }
+  }
+
+  // Coba deteksi dengan which
+  try {
+    const chromiumPath = execSync("which chromium-browser || which chromium || which google-chrome", { encoding: "utf-8" }).trim();
+    if (chromiumPath) {
+      console.log(`🌐 Browser ditemukan: ${chromiumPath}`);
+      return chromiumPath;
+    }
+  } catch (e) {
+    // Tidak ditemukan
+  }
+
+  console.error("❌ Tidak ada browser yang ditemukan! Install chromium-browser:");
+  console.error("   sudo apt install chromium-browser");
+  return null;
+}
+
+const browserPath = getBrowserPath();
 
 const client = new Client({
   authStrategy: new LocalAuth({ dataPath: "./.wwebjs_auth" }),
   puppeteer: {
     headless: true,
-    executablePath: "/usr/bin/google-chrome",
+    executablePath: browserPath,
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
