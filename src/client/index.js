@@ -44,6 +44,7 @@ const client = new Client({
   puppeteer: {
     headless: true,
     executablePath: browserPath,
+    timeout: 120000, // Timeout lebih lama untuk Raspberry Pi
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
@@ -51,6 +52,7 @@ const client = new Client({
       "--disable-accelerated-2d-canvas",
       "--no-first-run",
       "--no-zygote",
+      "--single-process", // Penting untuk Raspberry Pi
       "--disable-gpu",
       "--disable-extensions",
       "--disable-background-networking",
@@ -67,11 +69,7 @@ const client = new Client({
       "--ignore-certificate-errors-spki-list",
     ],
   },
-  webVersionCache: {
-    type: "remote",
-    remotePath:
-      "https://raw.githubusercontent.com/AKASHAorg/webwhatsapp-versions/main/canary.json",
-  },
+  // Tidak pakai webVersionCache - biarkan default
   restartOnAuthFail: true,
 });
 
