@@ -1,0 +1,13 @@
+# Cloudflare Tunnel Configuration untuk Bot Kinanti
+# Tunnel ini mengekspos bot WhatsApp ke internet via bot.kinantiku.com
+
+tunnel: kinanti-bot
+credentials-file: /home/raka/.cloudflared/34d11f52-a5e9-4f9a-bb1b-cd11d6289df2.json
+
+ingress:
+  # Bot WhatsApp API (port 4000)
+  - hostname: bot.kinantiku.com
+    service: http://localhost:4000
+  
+  # Catch-all rule (wajib ada di akhir)
+  - service: http_status:404
