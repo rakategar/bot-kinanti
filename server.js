@@ -670,13 +670,21 @@ waClient.on("qr", (qr) => {
   console.log("\n=================================\n");
 });
 
+waClient.on("loading_screen", (percent, message) => {
+  console.log(`⏳ Loading: ${percent}% - ${message}`);
+});
+
+waClient.on("authenticated", () => {
+  console.log("✅ Authenticated! Menunggu WhatsApp ready...");
+});
+
 waClient.on("ready", () => {
-  console.log("WhatsApp client is ready!");
+  console.log("🚀 WhatsApp client is ready!");
   setupSchedules();
 });
 
-waClient.on("auth_failure", (m) => console.error("Auth failure:", m));
-waClient.on("disconnected", (r) => console.error("Disconnected:", r));
+waClient.on("auth_failure", (m) => console.error("❌ Auth failure:", m));
+waClient.on("disconnected", (r) => console.error("❌ Disconnected:", r));
 
 // =====================
 // EXPRESS API (dipisah via routes/broadcast.js)
