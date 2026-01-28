@@ -1,5 +1,6 @@
-const { Client, LocalAuth } = require("whatsapp-web.js");
+const { Client, LocalAuth, NoAuth } = require("whatsapp-web.js");
 const { execSync } = require("child_process");
+const path = require("path");
 
 // Fungsi untuk mendeteksi path browser yang tersedia
 function getBrowserPath() {
@@ -44,7 +45,7 @@ const client = new Client({
   puppeteer: {
     headless: true,
     executablePath: browserPath,
-    timeout: 120000, // Timeout lebih lama untuk Raspberry Pi
+    timeout: 120000,
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
@@ -52,7 +53,7 @@ const client = new Client({
       "--disable-accelerated-2d-canvas",
       "--no-first-run",
       "--no-zygote",
-      "--single-process", // Penting untuk Raspberry Pi
+      "--single-process",
       "--disable-gpu",
       "--disable-extensions",
       "--disable-background-networking",
@@ -69,7 +70,10 @@ const client = new Client({
       "--ignore-certificate-errors-spki-list",
     ],
   },
-  // Tidak pakai webVersionCache - biarkan default
+  // Disable web version cache untuk menghindari error
+  webVersionCache: {
+    type: "none",
+  },
   restartOnAuthFail: true,
 });
 
