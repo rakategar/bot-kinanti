@@ -1,6 +1,48 @@
 // server.js
 require("dotenv").config();
 
+const fs = require("fs");
+const path = require("path");
+const util = require("util");
+
+// ===== Log to file for debugging =====
+const LOG_DIR = path.join(__dirname, "logs");
+const LOG_FILE = path.join(LOG_DIR, "runtime.log");
+try {
+  fs.mkdirSync(LOG_DIR, { recursive: true });
+} catch (_e) {
+  // If logging dir cannot be created, continue without file logging
+}
+
+const originalConsole = {
+  log: console.log,
+  info: console.info,
+  warn: console.warn,
+  error: console.error,
+};
+
+function appendLog(level, args) {
+  try {
+    const ts = new Date().toISOString();
+    const parts = Array.from(args).map((v) =>
+      typeof v === "string" ? v : util.inspect(v, { depth: 4 }),
+    );
+    fs.appendFileSync(
+      LOG_FILE,
+      `[${ts}] [${level}] ${parts.join(" ")}\n`,
+    );
+  } catch (_e) {
+    // ignore file logging errors
+  }
+}
+
+["log", "info", "warn", "error"].forEach((level) => {
+  console[level] = (...args) => {
+    appendLog(level, args);
+    originalConsole[level](...args);
+  };
+});
+
 const { nlpPipeline } = require("./src/nlp/pipeline");
 const { handleSiswaCommand } = require("./src/controllers/siswaController");
 const { handleGuruCommand } = require("./src/controllers/guruController");
@@ -12,8 +54,9 @@ const excelUtil = require("./src/utils/excelUtil");
 const prismaMod = require("./src/config/prisma");
 const prisma = prismaMod?.prisma ?? prismaMod?.default ?? prismaMod;
 
-const { client } = require("./src/client");
-const waClient = client;
+
+const whatsappService = require("./src/services/whatsappService");
+let waClient = null;
 
 const {
   startImgToPdf,
@@ -252,8 +295,9 @@ async function clearGuruMenuMode(phone) {
 // =====================
 // WhatsApp Message Loop
 // =====================
-waClient.on("message", async (message) => {
-  try {
+function setupMessageLoop(client) {
+  client.on("message", async (message) => {
+    try {
     // Abaikan pesan dari grup (JID berakhiran @g.us)
     if (String(message.from || "").endsWith("@g.us")) {
       console.log(`⏭️ [server] Skipping group message from: ${message.from}`);
@@ -638,7 +682,7 @@ waClient.on("message", async (message) => {
       supabase,
       pdfUtil,
     });
-  } catch (e) {
+    } catch (e) {
     // Handle markedUnread error - pesan mungkin sudah terkirim
     if (e?.message?.includes("markedUnread")) {
       console.log("⚠️ [server] markedUnread error (ignored)");
@@ -654,37 +698,22 @@ waClient.on("message", async (message) => {
     } catch (replyErr) {
       console.error("Failed to send error reply:", replyErr.message);
     }
-  }
-});
+    }
+  });
+}
 
 // =====================
 // Lifecycle & Logging
 // =====================
-waClient.initialize();
-console.log("Memulai Bot...");
 
-waClient.on("qr", (qr) => {
-  console.log("QR received, scan di WhatsApp!");
-  console.log("\n=== SCAN QR CODE DI BAWAH INI ===\n");
-  qrcode.generate(qr, { small: true });
-  console.log("\n=================================\n");
-});
-
-waClient.on("loading_screen", (percent, message) => {
-  console.log(`⏳ Loading: ${percent}% - ${message}`);
-});
-
-waClient.on("authenticated", () => {
-  console.log("✅ Authenticated! Menunggu WhatsApp ready...");
-});
-
-waClient.on("ready", () => {
-  console.log("🚀 WhatsApp client is ready!");
+// Inisialisasi WhatsApp client
+whatsappService.initialize().then((client) => {
+  waClient = client;
+  setupMessageLoop(client);
   setupSchedules();
+}).catch((err) => {
+  console.error("Gagal inisialisasi WhatsApp:", err);
 });
-
-waClient.on("auth_failure", (m) => console.error("❌ Auth failure:", m));
-waClient.on("disconnected", (r) => console.error("❌ Disconnected:", r));
 
 // =====================
 // EXPRESS API (dipisah via routes/broadcast.js)
@@ -700,8 +729,19 @@ app.get("/", (req, res) => {
   res.json({ ok: true, msg: "Bot Kinanti aktif & siap menerima broadcast" });
 });
 
-// pasang route broadcast dengan injected waClient
-app.use("/broadcast", broadcastRouteFactory(waClient));
 
+// pasang route broadcast dengan injected waClient (jika sudah ready)
+app.use("/broadcast", (req, res, next) => {
+  if (!waClient) {
+    return res.status(503).json({ ok: false, msg: "WhatsApp client belum siap" });
+  }
+  req.waClient = waClient;
+  return broadcastRouteFactory(waClient)(req, res, next);
+});
+
+// Health check WhatsApp
+app.get("/api/whatsapp/health", (req, res) => {
+  res.json({ ok: true, ready: whatsappService.isReady() });
+});
 const PORT = process.env.BOT_PORT || 4000;
 app.listen(PORT, () => console.log(`Bot API listening on port ${PORT}`));
