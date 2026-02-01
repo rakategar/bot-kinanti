@@ -304,6 +304,18 @@ function setupMessageLoop(client) {
       return;
     }
 
+    // Abaikan pesan dari status/story WhatsApp (JID status@broadcast)
+    if (String(message.from || "").includes("status@broadcast")) {
+      console.log(`⏭️ [server] Skipping WhatsApp status/story from: ${message.from}`);
+      return;
+    }
+
+    // Abaikan broadcast channel
+    if (String(message.from || "").endsWith("@broadcast")) {
+      console.log(`⏭️ [server] Skipping broadcast channel from: ${message.from}`);
+      return;
+    }
+
     // Resolve phone number (handle both @c.us and @lid formats)
     const phone = await resolvePhoneFromMessage(message);
     const rawText = (message.body || "").trim();
@@ -313,6 +325,26 @@ function setupMessageLoop(client) {
     const actualJid = message.from;
     if (phone && actualJid) {
       await setPhoneJid(phone, actualJid);
+    }
+
+    // ========== LOG AKTIVITAS CHAT ==========
+    // Catat siapa saja yang chat ke bot (untuk monitoring)
+    try {
+      const role = await getUserRoleByPhone(phone);
+      await prisma.chatActivity.create({
+        data: {
+          phone: phone,
+          jid: actualJid,
+          role: role || "unknown",
+          message: rawText.substring(0, 100), // Simpan 100 karakter pertama
+        },
+      }).catch(err => {
+        // Jika error, jangan hentikan bot
+        console.warn("⚠️ Failed to log chat activity:", err.message);
+      });
+      console.log(`📝 [Chat Log] ${phone} (${role || "unknown"}): ${rawText.substring(0, 50)}...`);
+    } catch (logErr) {
+      console.warn("⚠️ Chat logging error:", logErr.message);
     }
 
     // ========== CEK ROLE USER TERLEBIH DAHULU ==========
@@ -743,5 +775,90 @@ app.use("/broadcast", (req, res, next) => {
 app.get("/api/whatsapp/health", (req, res) => {
   res.json({ ok: true, ready: whatsappService.isReady() });
 });
+
+// Get chat activity logs (for monitoring)
+app.get("/api/chat-activity", async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = parseInt(req.query.offset) || 0;
+    
+    const activities = await prisma.chatActivity.findMany({
+      take: limit,
+      skip: offset,
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        phone: true,
+        role: true,
+        message: true,
+        createdAt: true,
+      },
+    });
+    
+    const total = await prisma.chatActivity.count();
+    
+    res.json({
+      ok: true,
+      data: activities,
+      pagination: {
+        total,
+        limit,
+        offset,
+        hasMore: offset + limit < total,
+      },
+    });
+  } catch (err) {
+    console.error("Error fetching chat activity:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Get chat activity stats
+app.get("/api/chat-activity/stats", async (req, res) => {
+  try {
+    // Count total messages
+    const totalMessages = await prisma.chatActivity.count();
+    
+    // Count by role
+    const byRole = await prisma.chatActivity.groupBy({
+      by: ["role"],
+      _count: true,
+    });
+    
+    // Count unique users
+    const uniqueUsers = await prisma.chatActivity.findMany({
+      distinct: ["phone"],
+      select: { phone: true },
+    });
+    
+    // Recent activity (last 24 hours)
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const last24Hours = await prisma.chatActivity.count({
+      where: {
+        createdAt: {
+          gte: yesterday,
+        },
+      },
+    });
+    
+    res.json({
+      ok: true,
+      stats: {
+        totalMessages,
+        uniqueUsers: uniqueUsers.length,
+        last24Hours,
+        byRole: byRole.reduce((acc, item) => {
+          acc[item.role || "unknown"] = item._count;
+          return acc;
+        }, {}),
+      },
+    });
+  } catch (err) {
+    console.error("Error fetching chat stats:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 const PORT = process.env.BOT_PORT || 4000;
 app.listen(PORT, () => console.log(`Bot API listening on port ${PORT}`));

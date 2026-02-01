@@ -74,14 +74,18 @@ const clientConfig = {
   }),
 
   puppeteer: {
-    headless,
-
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-    ],
-  },
+  headless: true,
+  executablePath: "/usr/bin/chromium",
+  args: [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+    "--no-first-run",
+    "--no-default-browser-check",
+  ],
+}
+,
 
   restartOnAuthFail: true,
 };

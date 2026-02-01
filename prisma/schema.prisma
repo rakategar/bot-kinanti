@@ -166,5 +166,19 @@ model PhoneJidMapping {
   updatedAt DateTime @updatedAt
 }
 
+// =================== CHAT ACTIVITY LOG ===================
+// Menyimpan log aktivitas chat untuk monitoring
+model ChatActivity {
+  id        Int      @id @default(autoincrement())
+  phone     String   // Nomor telepon yang chat
+  jid       String   // WhatsApp JID
+  role      String?  // Role user (guru/siswa/unknown)
+  message   String?  // Sample pesan (opsional, untuk debugging)
+  createdAt DateTime @default(now())
+  
+  @@index([phone])
+  @@index([createdAt])
+}
+
 
 
