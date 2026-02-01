@@ -143,7 +143,7 @@ run_with_tmux() {
     sleep 1
     
     # Buat window kedua untuk cloudflare
-    tmux new-window -t "$session_name" -n "cloudflare" "echo '🌐 Cloudflare Tunnel' && echo '==================' && echo 'Endpoint: https://bot.kinantiku.com' && echo '' && cloudflared tunnel --config '$CONFIG_FILE' run; exec bash"
+    tmux new-window -t "$session_name" -n "cloudflare" "cd '$BOT_DIR' && echo '🌐 Cloudflare Tunnel' && echo '==================' && echo 'Endpoint: https://bot.kinantiku.com' && echo '' && cloudflared tunnel --config '$CONFIG_FILE' run; exec bash"
     
     # Kembali ke window pertama
     tmux select-window -t "$session_name:bot"
@@ -191,7 +191,7 @@ run_with_screen() {
     sleep 1
     
     # Jalankan cloudflare di screen terpisah
-    screen -dmS "${session_name}-cf" bash -c "cloudflared tunnel --config '$CONFIG_FILE' run"
+    screen -dmS "${session_name}-cf" bash -c "cd '$BOT_DIR' && cloudflared tunnel --config '$CONFIG_FILE' run"
     
     echo -e "${GREEN}============================================${NC}"
     echo -e "${GREEN}✅ Bot Kinanti berjalan di screen!${NC}"
@@ -227,7 +227,7 @@ sleep 3
 
 # Terminal 2: Jalankan Cloudflare Tunnel
 echo -e "${YELLOW}[2/2] Membuka terminal untuk Cloudflare Tunnel...${NC}"
-open_terminal "Cloudflare-Tunnel" "echo '🌐 Cloudflare Tunnel' && echo '==================' && echo 'Endpoint: https://bot.kinantiku.com' && echo '' && cloudflared tunnel --config $CONFIG_FILE run"
+open_terminal "Cloudflare-Tunnel" "cd $BOT_DIR && echo '🌐 Cloudflare Tunnel' && echo '==================' && echo 'Endpoint: https://bot.kinantiku.com' && echo '' && cloudflared tunnel --config $CONFIG_FILE run"
 
 echo ""
 echo -e "${GREEN}============================================${NC}"
