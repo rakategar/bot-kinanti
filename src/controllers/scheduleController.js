@@ -1,7 +1,9 @@
 // src/controllers/scheduleController.js
 const cron = require("node-cron");
-const { client } = require("../client");
 const { safeSendMessage } = require("../utils/waHelper");
+
+// Client akan di-inject dari server.js via setupSchedules(client)
+let client = null;
 
 // ===== Prisma import yang robust (default/named) =====
 const prismaMod = require("../config/prisma");
@@ -461,16 +463,45 @@ async function reminderDeadlineBesok() {
 }
 
 // ================== PENJADWALAN (CRON) ==================
+
+/**
+ * Parse jam dari .env format "7.30" → { hour: 7, minute: 30 }
+ * Mendukung format: "7.30", "07.30", "7:30", "07:30", "7", "17"
+ */
+function parseJam(envValue, defaultHour, defaultMinute = 0) {
+  if (!envValue) return { hour: defaultHour, minute: defaultMinute };
+  const str = String(envValue).trim();
+  const parts = str.split(/[.:]/);
+  const hour = parseInt(parts[0], 10);
+  const minute = parts[1] ? parseInt(parts[1], 10) : 0;
+  if (isNaN(hour) || hour < 0 || hour > 23 || isNaN(minute) || minute < 0 || minute > 59) {
+    console.warn(`⚠️ Format jam tidak valid: "${envValue}", gunakan default ${defaultHour}:${String(defaultMinute).padStart(2, "0")}`);
+    return { hour: defaultHour, minute: defaultMinute };
+  }
+  return { hour, minute };
+}
+
 let __SCHEDULED = global.__KINANTI_SCHEDULED || false;
-function setupSchedules() {
+function setupSchedules(waClient) {
   if (__SCHEDULED) {
     console.log("⏰ Schedules already set, skipping re-register.");
     return;
   }
 
-  // Contoh: atur sesuai kebutuhanmu
+  // Simpan client yang di-inject dari server.js
+  if (waClient) client = waClient;
+
+  const pagi = parseJam(process.env.REMINDER_PAGI, 7, 30);
+  const sore = parseJam(process.env.REMINDER_SORE, 17, 0);
+
+  const cronPagi = `${pagi.minute} ${pagi.hour} * * *`;
+  const cronSore = `${sore.minute} ${sore.hour} * * *`;
+
+  console.log(`⏰ Reminder pagi dijadwalkan: ${String(pagi.hour).padStart(2, "0")}:${String(pagi.minute).padStart(2, "0")} WIB (${cronPagi})`);
+  console.log(`⏰ Reminder sore dijadwalkan: ${String(sore.hour).padStart(2, "0")}:${String(sore.minute).padStart(2, "0")} WIB (${cronSore})`);
+
   cron.schedule(
-    "0 7 * * *", // 07:00 WIB
+    cronPagi,
     async () => {
       console.log("⏰ Broadcast pagi");
       await broadcastPagi();
@@ -479,7 +510,7 @@ function setupSchedules() {
   );
 
   cron.schedule(
-    "0 17 * * *", // 17:00 WIB
+    cronSore,
     async () => {
       console.log("⏰ Broadcast sore + reminder deadline besok");
       await broadcastSore();

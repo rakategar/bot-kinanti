@@ -1,20 +1,9 @@
 // src/services/logger.js
-const prisma = require("../config/prisma");
+// NlpLog table removed from database - this is now a no-op
+// Kept for backward compatibility in case it's imported somewhere
 
 async function logNlp({ userPhone, text, predicted, confidence, entities }) {
-  try {
-    await prisma.nlpLog.create({
-      data: {
-        userPhone,
-        text: String(text || "").slice(0, 2000),
-        predicted: predicted || "fallback",
-        confidence: Number(confidence || 0),
-        entities: entities || {},
-      },
-    });
-  } catch (e) {
-    // ignore
-  }
+  // No-op: NlpLog table no longer exists in database
 }
 
 module.exports = { logNlp };
